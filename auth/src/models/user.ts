@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { Password } from "../services/password";
 
 // Interface that describe the propeties
 //that requierd for creating a new user
@@ -23,13 +24,22 @@ interface UserDoc extends mongoose.Document{
 const userSchema = new mongoose.Schema({
     email:{
         type: String,
-        required: true
+        require: true
     },
     password:{
-        typr: String,
-        required: true
+        type: String,
+        require: true
     }
 });
+
+userSchema.pre('save', async function (done) {
+    if(this.isModified('password')){
+        const hashed = await Password.toHash(this.get('password') as string);
+        this.set('password', hashed);
+    }
+    done();
+})
+
 // with userSchema.statics.build i add function called build to the user schema
 userSchema.statics.build = (attrs: UserAttrs) =>{
     return new User(attrs); 
