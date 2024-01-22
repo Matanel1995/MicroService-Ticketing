@@ -2,6 +2,7 @@ import express from 'express';
 import 'express-async-errors';
 import { json } from 'body-parser';
 import mongoose, { mongo } from 'mongoose';
+import cookieSession from 'cookie-session';
 
 import { currentUserRouter } from './routes/current-user';
 import { signinRouter } from './routes/signin';
@@ -14,7 +15,16 @@ const mongoUrl = 'mongodb://auth-mongo-srv:27017/auth';
 
 
 const app = express();
+app.set('trust proxy', true); //data come through nginx proxy, here we make sure it trust the traffic.
+
 app.use(json());
+
+app.use(
+  cookieSession({
+    signed: false,
+    secure: true
+  })
+);
 
 app.use(currentUserRouter);
 app.use(signinRouter);
@@ -28,6 +38,11 @@ app.all('*', async (req, res) => {
 app.use(errorHandler);
 
 const start = async () =>{
+
+  if(!process.env.JWT_KEY){
+    throw new Error('Required JWT_KEY to run this website!');
+  }
+
   try{
     await mongoose.connect(mongoUrl);
   }
